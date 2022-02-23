@@ -58,7 +58,7 @@ class DDQNAgent:
                             torch.tensor([action]), torch.tensor([reward]), torch.tensor([done])))
 
         
-    def experience_replay(self, step_reward, env):
+    def experience_replay(self, step_reward):
         self.current_episode_reward += step_reward
         
         if self.current_step%self.sync_period == 0: #Copy network pieces if time
@@ -84,12 +84,14 @@ class DDQNAgent:
         q_estimate = self.net(state.cuda(), model="online")[np.arange(0, self.batch_size), action.cuda()]
         with torch.no_grad():
             action_preds = self.net(next_state.cuda(), model="online")
-            if params.masking:
-                action_preds = params.mask_vacs(env, action_preds) #Mask previous sites
+            #This was bug! Should not have masked here since this is PREVIOUS experience
+#            if params.masking:
+#                action_preds = params.mask_vacs(env, action_preds) #Mask previous sites
             best_action = torch.argmax(action_preds, dim=1)
             
             next_q = self.net(next_state.cuda(), model="target")[np.arange(0, self.batch_size), best_action]
             q_target = (reward.cuda() + (1 - done.cuda().float()) * self.gamma * next_q).float()
+
         loss = self.loss(q_estimate, q_target)
         self.optimizer.zero_grad()
         loss.backward()

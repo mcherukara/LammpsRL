@@ -117,7 +117,7 @@ while episode<max_episodes:
         cstep+=1
         next_state, reward, done, info = env.step(action)
         agent.remember(state, next_state, action, reward, done)
-        agent.experience_replay(reward, env) #CHANGE from base: pass env here for masking
+        agent.experience_replay(reward)
         state = next_state
         if done:
             cstep = 0

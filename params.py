@@ -16,7 +16,7 @@ save_memory = False #Save memory on checkpoint yes/no
 
 
 #DQNAgent params
-exploration_rate_decay = 0.99999#5
+exploration_rate_decay = 0.99995#5
 exploration_rate_min = 0.01
 learn_every = 4 #How many env steps to train
 exploration_rate_start = 1.0 #Initial exploration rate
