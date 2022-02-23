@@ -1,2 +1,2 @@
 # LammpsRL
-DQN agent for structure generation
+DQN agent for materials design
