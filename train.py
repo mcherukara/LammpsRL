@@ -5,6 +5,9 @@ import os,sys
 from torchsummary import summary
 from agent import DDQNAgent
 
+from lammpsrun import lammpsrun
+from lammpsenv import lammpsenv
+
 use_cuda = torch.cuda.is_available()
 if use_cuda: 
     print(f"Using CUDA: {use_cuda}")
@@ -13,22 +16,8 @@ else:
     print("You neeed CUDA. Sorry!")
     exit()
 
-class SkipFrame(gym.Wrapper):
-    def __init__(self, env, skip):
-        super().__init__(env)
-        self._skip = skip
 
-    def step(self, action):
-        total_reward = 0.0
-        done = False
-        for i in range(self._skip):
-            obs, reward, done, info = self.env.step(action)
-            total_reward += reward
-            if done:
-                break
-        return obs, total_reward, done, info
-
-
+#Get a PIL image and then greyscale it
 class GrayScaleObservation(gym.ObservationWrapper):
     def __init__(self, env):
         super().__init__(env)
@@ -38,35 +27,54 @@ class GrayScaleObservation(gym.ObservationWrapper):
         transform = transforms.Grayscale()
         return transform(torch.tensor(np.transpose(observation, (2, 0, 1)).copy(), dtype=torch.float))
 
-
+# Run through dummy or real resize to move everything to Torch tensors
 class ResizeObservation(gym.ObservationWrapper):
     def __init__(self, env, shape):
         super().__init__(env)
         self.shape = (shape, shape)
-        obs_shape = self.shape + self.observation_space.shape[2:]
+        obs_shape = (1,) + self.shape + self.observation_space.shape[2:]
+#        print(obs_shape) #Adding a 1 at the front cause not framestacking
         self.observation_space = Box(low=0, high=255, shape=obs_shape, dtype=np.uint8)
 
     def observation(self, observation):
-        transformations = transforms.Compose([transforms.Resize(self.shape), transforms.Normalize(0, 255)])
-        return transformations(observation).squeeze(0).numpy()
+        transformations = transforms.Compose([transforms.Resize(self.shape), transforms.Normalize(0, 255)])        
+        return transformations(observation).numpy()#.squeeze(0) 
+        #Think unsqueeze is needed because no framestack and need to batch
 
 
-env = gym.make('BreakoutNoFrameskip-v4')
-
-# Apply Wrappers to environment
-env = SkipFrame(env, skip=4)
+#Init env
+env = lammpsenv()
 env = GrayScaleObservation(env)
-env = ResizeObservation(env, shape=84)
-env = FrameStack(env, num_stack=4)
+env = ResizeObservation(env, shape=params.shape)
 
-env.seed(params.seed)
-env.action_space.seed(params.seed)
-torch.manual_seed(params.seed)
-torch.random.manual_seed(params.seed)
-random.seed(params.seed)
-np.random.seed(params.seed)
 
 print ("Observation shape is", env.observation_space.shape)
+
+# Test run and image
+#Render maps vacs onto 0-255 while next_state keeps in range 0-1 because of wrappers
+import time
+t1 = time.time()
+env.reset()
+ids = [266-1,265-1,308-1,307-1,328-1,327-1,348-1,347-1,245-1,246-1] #Diagonal
+#IDS CAME FROM OVITO so subtract 1
+for i in ids:
+#    print (i)
+    next_state, reward, done, info = env.step(i)
+    if done:
+        env.reset()
+fr = env.render(mode="rgb_array")
+f, ax = plt.subplots(1,2, figsize=(20, 12))
+im=ax[0].imshow(fr, origin='lower')
+plt.colorbar(im, ax=ax[0], fraction=0.046, pad=0.04)
+im=ax[1].imshow(next_state.__array__().squeeze().T, origin='lower')
+plt.colorbar(im, ax=ax[1], fraction=0.046, pad=0.04)
+plt.savefig("tst_img.png")
+plt.close()
+print(next_state.shape)
+
+t2 = time.time()
+print ("Time", t2-t1)
+
 
 #Load checkpoint
 episode = params.episode
@@ -102,14 +110,14 @@ while episode<max_episodes:
     state = env.reset()
     cstep = 0 #Keep track of steps in this episode
     while True:
-        action = agent.act(state)
+        action = agent.act(state, env) #CHANGE from base: pass env here for masking
         if cstep==0: 
             action = np.random.randint(agent.action_dim) 
             #Take first action randomly so start from different places
         cstep+=1
         next_state, reward, done, info = env.step(action)
         agent.remember(state, next_state, action, reward, done)
-        agent.experience_replay(reward)
+        agent.experience_replay(reward, env) #CHANGE from base: pass env here for masking
         state = next_state
         if done:
             cstep = 0
@@ -118,7 +126,7 @@ while episode<max_episodes:
             if episode % params.log_period == 0: #Is it time to log results?
                 agent.log_period(episode=episode, epsilon=agent.exploration_rate, step=agent.current_step)
                 if episode % params.checkpoint_period == 0: #Is it time to save the model file and optionally memory?
-                    agent.save_checkpoint(episode)
+                    agent.save_checkpoint(episode, env)
                 plt.imshow(state.__array__().squeeze().T, origin='lower')
                 plt.savefig(save_directory + "/img%d.png" %episode)
                 plt.close()

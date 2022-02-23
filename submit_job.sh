@@ -1,13 +1,15 @@
 #!/bin/bash
-#SBATCH --job-name=DuelDDQN
+#SBATCH --job-name=lmpDDQN
 #SBATCH --account=AICDI
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 
 source ~/.bashrc
-conda activate SB3
+conda activate LammpsSB3
 
 rm slurm-*
-python -u api_test.py > Double_DQN/log.txt
+python -u train.py > MoS2/DQN_log.txt
+mv log.lammps MoS2
+mv *.png MoS2
 

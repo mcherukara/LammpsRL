@@ -4,7 +4,7 @@ import params
 class lammpsrun:
     def __init__(self, cores=1):
         self.lmp = LammpsLibrary(cores=cores)
-        self.lmp.file(params.infile) #Read lammps file with everything except minimize
+        self.lmp.file(params.in_file) #Read lammps file with everything except minimize
         self.deleted_atoms = [] #List of atoms deleted
         self.orig_ats = self.get_atoms()
         self.orig_topSats = self.orig_ats[np.where(self.orig_ats[:,1]==params.atom_type)]
@@ -12,7 +12,7 @@ class lammpsrun:
     
     def reset (self):
         self.lmp.command("clear")
-        self.lmp.file(params.infile)
+        self.lmp.file(params.in_file)
         self.deleted_atoms = [] #List of atoms deleted
         self.orig_ats = self.get_atoms()
         self.orig_topSats = self.orig_ats[np.where(self.orig_ats[:,1]==params.atom_type)]

@@ -11,13 +11,13 @@ boundary p p s
 #processors 6 8 1
 #read_data in.data
 #read_data mos2_nocharge.data
-read_data MoS2_Min.data
+read_data MoS2/MoS2_Min.data
 neighbor  1.0 bin 
 # ----------------------------------
 ## PAIR INTERACTION
 # ----------------------------------
 pair_style sw
-pair_coeff * * mos2_2013.sw Mo S S
+pair_coeff * * MoS2/mos2_2013.sw Mo S S
 
 neigh_modify delay 0 every 1 check yes
 

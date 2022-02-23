@@ -58,7 +58,7 @@ class DDQNAgent:
                             torch.tensor([action]), torch.tensor([reward]), torch.tensor([done])))
 
         
-    def experience_replay(self, step_reward):
+    def experience_replay(self, step_reward, env):
         self.current_episode_reward += step_reward
         
         if self.current_step%self.sync_period == 0: #Copy network pieces if time
@@ -84,6 +84,8 @@ class DDQNAgent:
         q_estimate = self.net(state.cuda(), model="online")[np.arange(0, self.batch_size), action.cuda()]
         with torch.no_grad():
             action_preds = self.net(next_state.cuda(), model="online")
+            if params.masking:
+                action_preds = params.mask_vacs(env, action_preds) #Mask previous sites
             best_action = torch.argmax(action_preds, dim=1)
             
             next_q = self.net(next_state.cuda(), model="target")[np.arange(0, self.batch_size), best_action]
@@ -98,11 +100,16 @@ class DDQNAgent:
         state, next_state, action, reward, done = map(torch.stack, zip(*random.sample(self.memory, self.batch_size)))
         return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
 
-    def act(self, state):
+    def act(self, state, env):
         if np.random.rand() < self.exploration_rate:
             action = np.random.randint(self.action_dim)
+            if params.masking:
+                while action+1 in env.run.deleted_atoms: #Repeat random draw if already in delete list
+                    action = np.random.randint(self.action_dim)
+
         else:
             action_values = self.net(torch.tensor(state.__array__()).cuda().unsqueeze(0), model="online")
+            action_values = params.mask_vacs(env, action_values) #Mask previous vacancy sites
             action = torch.argmax(action_values, dim=1).item()
         self.exploration_rate *= self.exploration_rate_decay
         self.exploration_rate = max(self.exploration_rate_min, self.exploration_rate)
@@ -116,7 +123,7 @@ class DDQNAgent:
         self.exploration_rate = checkpoint['exploration_rate']
 
         
-    def save_checkpoint(self, episode):
+    def save_checkpoint(self, episode, env):
         filename = os.path.join(self.save_directory, 'checkpoint_{}.pth'.format(episode))
         torch.save(dict(model=self.net.state_dict(), exploration_rate=self.exploration_rate), f=filename)
         print('Checkpoint saved to \'{}\''.format(filename))
@@ -127,3 +134,9 @@ class DDQNAgent:
             p_file = open(filename, 'wb')
             pickle.dump(self.memory, p_file)
             p_file.close()
+
+        #Save data file
+        filename = os.path.join(self.save_directory, 'atoms_{}.data'.format(episode))
+        env.run.lmp.command("run 0")
+        env.run.lmp.command("write_data %s" %filename)
+    

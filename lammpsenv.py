@@ -6,7 +6,7 @@ import params
 
 class lammpsenv(gym.Env):
     def __init__(self):
-        self.run = lammpsrun()
+        self.run = lammpsrun(cores=params.cores)
         ats = self.run.get_atoms()
         self.topSats = ats[np.where(ats[:,1]==params.atom_type)]
         self.NSats = self.topSats.shape[0]
