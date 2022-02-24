@@ -1,5 +1,5 @@
 # LammpsRL
-DQN agent for materials design
+## DQN agent for materials design
 
 <img width="600" alt="rewards" src="https://user-images.githubusercontent.com/13368869/155581670-d557f0e7-eb8b-4d43-9b35-b468105c0e57.png">
 
