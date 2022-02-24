@@ -16,7 +16,7 @@ save_memory = False #Save memory on checkpoint yes/no
 
 
 #DQNAgent params
-exploration_rate_decay = 0.99995#5
+exploration_rate_decay = 0.99999#5
 exploration_rate_min = 0.01
 learn_every = 4 #How many env steps to train
 exploration_rate_start = 1.0 #Initial exploration rate
@@ -35,12 +35,12 @@ model_type = "Duel_Double_DQN" #Duel_Double_DQN or Double_DQN
 
 
 #MD specific
-Nvacs = 20 #How many vacancies in a step
+Nvacs = 40 #How many vacancies in a step
 Baseline_E = -3.0 #Average E of random arrangements of 40 vacs
 #E_conversion = 4.3363*10**-2 #kcal/mol to eV for ReaxFF runs
 cores = 1 #How many cores to use?
 in_file = "MoS2/in.MoS2"
-scale_E_reward = 1e4 #Scale E diff to get a reasonable number
+scale_E_reward = 1e3 #Scale E diff to get a reasonable number
 min_cmd = "minimize 1.0e-14 1.0e-16 60000 120000" #Minimize to be run to get PE
 shape = 36 #Shape of 2D image
 atom_type = 3 #Type of atom to delete
