@@ -7,5 +7,6 @@ DQN agent for materials design
 
 
 
-https://user-images.githubusercontent.com/13368869/155581797-a02d5856-ca3f-4e34-a025-cacdbf4a600e.mp4
+
+https://user-images.githubusercontent.com/13368869/155582066-dd704e3a-7ac8-4c0f-952b-186d9efbc388.mov
 
